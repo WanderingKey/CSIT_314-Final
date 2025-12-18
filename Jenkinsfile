@@ -2,11 +2,8 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_URL  = 'http://nexus-service:8081'
-        NEXUS_REPO = 'final-maven-repo'
-        GROUP_ID   = 'com.example'
-        ARTIFACT   = 'helloworld'
-        VERSION    = '0.0.1-SNAPSHOT'
+        NEXUS_REPO_URL = "http://nexus-service:8081/repository/final-maven-repo/"
+        NEXUS_CREDENTIALS = "nexus-admin"
     }
 
     stages {
@@ -31,11 +28,12 @@ pipeline {
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASS'
                 )]) {
-                    sh """
-                    curl -v -u $NEXUS_USER:$NEXUS_PASS \
-                    --upload-file target/${ARTIFACT}-${VERSION}.jar \
-                    $NEXUS_URL/repository/$NEXUS_REPO/${GROUP_ID.replace('.', '/')}/${ARTIFACT}/${VERSION}/${ARTIFACT}-${VERSION}.jar
-                    """
+                    sh '''
+                    ./mvnw deploy \
+                      -DskipTests \
+                      -Dnexus.username=$NEXUS_USER \
+                      -Dnexus.password=$NEXUS_PASS
+                    '''
                 }
             }
         }
@@ -43,10 +41,10 @@ pipeline {
 
     post {
         success {
-            echo 'Build and deploy successful'
+            echo 'Build and deployment to Nexus completed successfully.'
         }
         failure {
-            echo 'Build or deploy failed'
+            echo 'Build or deployment failed.'
         }
     }
 }
