@@ -58,5 +58,11 @@
 			</plugin>
 		</plugins>
 	</build>
-
+    <distributionManagement>
+		<repository>
+			<id>nexus</id>
+			<name>Nexus Hosted Maven Repo</name>
+			<url>http://nexus-service:8081/repository/final-maven-repo/</url>
+		</repository>
+	</distributionManagement>
 </project>
