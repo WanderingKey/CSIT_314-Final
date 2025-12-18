@@ -2,7 +2,11 @@ pipeline {
     agent any
 
     environment {
-        MAVEN_OPTS = "-Dmaven.repo.local=.m2/repository"
+        NEXUS_URL  = 'http://nexus-service:8081'
+        NEXUS_REPO = 'final-maven-repo'
+        GROUP_ID   = 'com.example'
+        ARTIFACT   = 'helloworld'
+        VERSION    = '0.0.1-SNAPSHOT'
     }
 
     stages {
@@ -15,10 +19,8 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh '''
-                  chmod +x mvnw
-                  ./mvnw clean package -DskipTests
-                '''
+                sh 'chmod +x mvnw'
+                sh './mvnw clean package -DskipTests'
             }
         }
 
@@ -29,23 +31,11 @@ pipeline {
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASS'
                 )]) {
-                    sh '''
-                      mkdir -p $HOME/.m2
-
-                      cat > $HOME/.m2/settings.xml <<EOF
-<settings>
-  <servers>
-    <server>
-      <id>nexus</id>
-      <username>${NEXUS_USER}</username>
-      <password>${NEXUS_PASS}</password>
-    </server>
-  </servers>
-</settings>
-EOF
-
-                      ./mvnw deploy -DskipTests
-                    '''
+                    sh """
+                    curl -v -u $NEXUS_USER:$NEXUS_PASS \
+                    --upload-file target/${ARTIFACT}-${VERSION}.jar \
+                    $NEXUS_URL/repository/$NEXUS_REPO/${GROUP_ID.replace('.', '/')}/${ARTIFACT}/${VERSION}/${ARTIFACT}-${VERSION}.jar
+                    """
                 }
             }
         }
@@ -53,7 +43,7 @@ EOF
 
     post {
         success {
-            echo 'Build and deploy completed successfully'
+            echo 'Build and deploy successful'
         }
         failure {
             echo 'Build or deploy failed'
